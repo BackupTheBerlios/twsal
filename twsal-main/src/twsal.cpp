@@ -842,7 +842,7 @@ string twsal::execute(twsal_memory * _mem)
 		{
 			//if (! is_pale
 			bool terminate = false;
-			string com_result = parse_line(trim_br(trim(trim_br(mem->actual))), mem, &terminate);
+			string com_result = parse_line(trim(mem->actual), mem, &terminate);
 			if (terminate == true)
 			{
 				return com_result;
@@ -853,7 +853,7 @@ string twsal::execute(twsal_memory * _mem)
 		{
 			mem->stairs_if.push_back("");
 			mem->stairs_for.push_back("");
-			mem->last_oper = parse_steer(mem->actual, &mem->stairs_for[mem->stairs_for.size()-1], &mem->stairs_if[mem->stairs_if.size()-1], mem);
+			mem->last_oper = parse_steer(mem->actual, &mem->stairs_for.back(), &mem->stairs_if.back(), mem);
 			if (mem->last_oper == EXEC)
 			{	
 				mem->actual = "";
@@ -871,7 +871,7 @@ string twsal::execute(twsal_memory * _mem)
 			}else
 			if (mem->last_oper == REPEAT_IF)
 			{
-				string tmp = parse_line(mem->stairs_if[mem->stairs_if.size()-1], mem);
+				string tmp = parse_line(mem->stairs_if.back(), mem);
 				if ((tmp == "0")  || (tmp == ""))
 				{
 					mem->pos = next_bracket(mem->pos, &mem->curr_line)+1;
@@ -888,7 +888,7 @@ string twsal::execute(twsal_memory * _mem)
 			}else
 			if (mem->last_oper == REPEAT_IF_DO)
 			{
-				string tmp = parse_line(mem->stairs_if[mem->stairs_if.size()-1], mem);
+				string tmp = parse_line(mem->stairs_if.back(), mem);
 				if ((tmp == "0") || (tmp == ""))
 				{
 					mem->pos = next_bracket(mem->pos, &mem->curr_line)+1;
@@ -906,14 +906,14 @@ string twsal::execute(twsal_memory * _mem)
 		if (meat[mem->pos] == '}')
 		{
 			if (mem->stairs.size() > 0)
-			if (mem->pos == mem->stairs[mem->stairs.size()-1])
+			if (mem->pos == mem->stairs.back())
 			{
-				if (mem->stairs_types[mem->stairs_types.size()-1] == WHILE)
+				if (mem->stairs_types.back() == WHILE)
 				{
-					string tmp = parse_line(mem->stairs_if[mem->stairs_if.size()-1], mem);
+					string tmp = parse_line(mem->stairs_if.back(), mem);
 					if ((tmp != "0") && (tmp != ""))
 					{
-						mem->pos = mem->stairs_back[mem->stairs_back.size()-1]+1;
+						mem->pos = mem->stairs_back.back()+1;
 						continue;
 					}else
 					{
@@ -925,13 +925,13 @@ string twsal::execute(twsal_memory * _mem)
 						continue;
 					}
 				}else
-				if (mem->stairs_types[mem->stairs_types.size()-1] == FOR)
+				if (mem->stairs_types.back() == FOR)
 				{
-					parse_line(mem->stairs_for[mem->stairs_for.size()-1], mem);
-					string tmp = parse_line(mem->stairs_if[mem->stairs_if.size()-1], mem);
+					parse_line(mem->stairs_for.back(), mem);
+					string tmp = parse_line(mem->stairs_if.back(), mem);
 					if ((tmp != "0") && (tmp != ""))
 					{
-						mem->pos = mem->stairs_back[mem->stairs_back.size()-1]+1;
+						mem->pos = mem->stairs_back.back()+1;
 						continue;
 					}else
 					{
@@ -980,15 +980,6 @@ string twsal::trim(string src)
 			break;
 	}
 	return string(src, from, len-from-to);
-}
-
-string twsal::trim_br(string src)
-{
-	if(src.length() == 0)
-		return src;
-	int b = src.find_first_not_of("\n");
-	int e = src.find_last_not_of("\n");
-	return std::string(src, b, e - b + 1);
 }
 
 int twsal::strtoint(string what)

@@ -97,18 +97,4 @@ class twsal
 		vector<twsal_memory> memory;
 };
 
-class twsal_class : public twsal
-{
-	public:
-		twsal_memory * mem;	
-		inline twsal_class()
-		{
-			mem = new twsal_memory(0);
-		}
-		inline void initialize()
-		{
-			execute(mem);
-		}
-};
-
 // vim: ts=5

@@ -10,3 +10,7 @@ encode_string.o: encode_string.cpp encode_string.h
 
 main.o: main.cpp twsal.h
 	g++ -c main.cpp -o main.o
+
+clean:
+	rm *.o
+	rm twsal

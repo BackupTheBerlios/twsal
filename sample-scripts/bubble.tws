@@ -1,0 +1,37 @@
+#!/usr/bin/twsal
+# Simple implementation of bubble-sort.
+
+$get = get();
+$in[length(in)] = $get;
+
+while($get)
+{
+	$get = get();
+	if ($get)
+	{
+		$in[length(in)] = $get;
+	}
+}
+
+$len = (length(in)-1);
+
+for ($i = 0; $i < $len; $i++)
+{
+	for ($j = 0; $j < $len; $j++)
+	{
+		if ($in[$j] < $in[$j+1])
+		{
+			$tmp = $in[$j];
+			$in[$j] = $in[$j+1];
+			$in[$j+1] = $tmp;
+		}
+	}
+}
+
+$len++;
+
+
+for ($i = 0; $i < $len; $i++)
+{
+	echo($in[$i]."\n");
+}

@@ -16,6 +16,8 @@ enum loop_type {
 	WHILE
 };
 
+
+
 class twsal
 {
     //    int parse_func(
@@ -27,8 +29,8 @@ class twsal
         int load(string script);    // as above
         void close();
         string execute();
+	string execute_safe();
         string script();
-        bool locked;
 	   void set_var(string name, string what);
 	   string get_var(string name);
 	   void set_array(string name, string num, string what);
@@ -72,6 +74,7 @@ class twsal
 	   vector< vector<string> > array_values;
         vector<int> book_values;
         vector<twsal> functions;
+	vector<twsal> functions_safe;
        // vector<int> *book_valgues;
        
        /* class twsal_function : twsal

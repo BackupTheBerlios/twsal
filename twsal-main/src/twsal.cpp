@@ -15,11 +15,11 @@ twsal::twsal()
 	is_comment = false;
 	is_string = false; 
 	is_pale = 0;
-	locked = false;
 	last_oper = (steering)NULL;
 	curr_line = 0;
 	parent = NULL;
 	root = true;
+//	memory = new vector<twsal_memory>;
 }
 
 
@@ -52,15 +52,9 @@ int twsal::open(string file_name)
 
 int twsal::load(string script)
 {
-	if (locked == false)
-	{
-		meat = script;
-		meat_size = meat.length();
-		return 0;
-	}else
-	{
-		return 1;
-	}        
+	meat = script;
+	meat_size = meat.length();
+	return 0;
 }
 
 string twsal::script()
@@ -507,13 +501,10 @@ string twsal::parse_func(/*vector< vector<string> > *dest, */string src, bool  *
 		return temp;
 	}else
 	{
-		//cout << "\n---- " << name << "\n" ;
 		for (int y = 0; y < functions.size(); y++)
 		{
-		//	cout << "\n n: " << functions[y].name;
 			if (command[owned][0] == functions[y].name)
 			{
-				//cout << "\nFOUND: " << this->name << " : " << root << " : " << src << " : " << command[owned][0] << '\n';
 				for (int q = 1; q < command[owned].size(); q++)
 				{
 					if (q-1 < functions[y].var_names.size())
@@ -521,18 +512,11 @@ string twsal::parse_func(/*vector< vector<string> > *dest, */string src, bool  *
 						functions[y].var_values[q-1] = parse_line(command[owned][q]);
 					}
 				}
-				//cout << "\nEREEE " << name << " : " << root << " : " << src << '\n';
-				//cout << "\n" << root << "\n";
 
-				return functions[y].execute();
+				return functions[y].execute_safe();
+				//return functions[y].execute();
 			}
 		}
-		//cout << "\nERG " << name << " : " << root << " : " << src << '\n';
-		//if (this->root == false)
-		//{
-			//cout << '\n' << name << " : " << root << " : " << src << '\n';
-			//if (root)
-			//	cout << "\n" << root << "\n";
 		if (!root)	
 			return parent->parse_func(src, terminate);
 		//}
@@ -543,6 +527,14 @@ string twsal::parse_func(/*vector< vector<string> > *dest, */string src, bool  *
 	
 }
 
+
+string twsal::execute_safe()
+{
+	functions_safe.push_back(*(new twsal(this->name, this->meat, this->parent)));
+	string result = functions_safe.back().execute();
+	functions_safe.pop_back();
+	return result;
+}
 
 
 void twsal::parse_for(string src, string *a1, string *a2, string *a3)
@@ -765,7 +757,6 @@ string twsal::execute()
 	is_comment = false;
 	is_string = false; 
 	is_pale = 0;
-	locked = false;
 	last_oper = (steering)NULL;
 	while (pos < meat_size)
 	{
@@ -945,14 +936,6 @@ string twsal::trim(string src)
 			break;
 	}
 	return string(src, from, len-from-to);
-	/*if(src.length() == 0)
-		return src;
-	int b = src.find_first_not_of(" ");
-	int e = src.find_last_not_of(" ");
-	string tmp = std::string(src, b, e - b + 1);
-	b = src.find_first_not_of("\t");
-	e = src.find_last_not_of("\t");
-	return std::string(src, b, e - b + 1);*/
 }
 
 string twsal::trim_br(string src)

@@ -127,7 +127,13 @@ string twsal::do_operator(string src1, string src2, string no_val, string oper, 
 	}else		     
 	if (oper == "++")
 	{
-		return inttostr(strtoint(src1)+1); 
+		set_var(no_val, inttostr(strtoint(src1)+1), mem);
+		return get_var(no_val, mem);
+	}else
+	if (oper == "--")
+	{
+		set_var(no_val, inttostr(strtoint(src1)-1), mem);
+		return get_var(no_val, mem);
 	}else
 	if (oper == "=")
 	{
@@ -252,7 +258,7 @@ string twsal::parse_line(string src, twsal_memory * mem, bool * terminate)
 	if (current_operator != "")
 	{
 		// last = do_operator(last, "", last_no_value, current_operator);
-		last = do_operator(value(current, mem, terminate), "", last_no_value, current_operator, mem);
+		last = do_operator(value(current, mem, terminate), "", current, current_operator, mem);
 	}
 	if ((last == "") && (current_operator == "") && (last_operator == ""))
 	{

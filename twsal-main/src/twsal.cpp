@@ -11,12 +11,14 @@ using namespace std;
 
 twsal::twsal()
 {
-	pos = 0;  //actual position of parser
-	is_comment = false;
-	is_string = false; 
-	is_pale = 0;
-	last_oper = (steering)NULL;
-	curr_line = 0;
+	memory.push_back(* new twsal_memory());
+	twsal_memory * mem = & memory.back();
+	mem->pos = 0;  //mem->actual mem->position of parser
+	//is_comment = false;
+	//is_string = false; 
+	//is_pale = 0;
+	mem->last_oper = (steering)NULL;
+	mem->curr_line = 0;
 	parent = NULL;
 	root = true;
 //	memory = new vector<twsal_memory>;
@@ -62,17 +64,17 @@ string twsal::script()
 	return meat;
 }
 
-string twsal::value(string what, bool * terminate/* = NULL*/)
+string twsal::value(string what, twsal_memory * mem, bool * terminate/* = NULL*/)
 {
 	if ((what[0] == '$') && (what[what.length()-1] == ']'))
 	{
 		// set_array("$ah", "2", "bzz");
 		//  return get_array("$ah", "2");
-		return get_array(string(what, 0, what.find("[")), parse_line(string(what, what.find("[")+1, what.length()-what.find("[")-2 )));
+		return get_array(string(what, 0, what.find("[")), parse_line(string(what, what.find("[")+1, what.length()-what.find("[")-2 ), mem), mem);
 	}else
 	if (what[0] == '$')
 	{
-		return get_var(what);
+		return get_var(what, mem);
 	}else
 	if ((what[0] == '"') && (what[what.length()-1] == '"'))
 	{
@@ -81,7 +83,7 @@ string twsal::value(string what, bool * terminate/* = NULL*/)
 	}else
 	if (what[0] == '(')
 	{
-		return parse_line(string(what, 1, what.length()-2));
+		return parse_line(string(what, 1, what.length()-2), mem);
 	}else
 	if ((what[0]=='1')||(what[0]=='2')||(what[0]=='3')||(what[0]=='4')
 	||(what[0]=='5')||(what[0]=='6')||(what[0]=='7')||(what[0]=='8')||
@@ -91,36 +93,36 @@ string twsal::value(string what, bool * terminate/* = NULL*/)
 	}else
 	if (what[what.length()-1] == ')')
 	{
-		return parse_func(/*&command,*/ what, terminate);
+		return parse_func(/*&mem->command,*/ what, mem, terminate);
 	}else
 	{
-		cout << curr_line << ":Parse error! " << what << "\n";
+		cout << mem->curr_line << ":Parse error! " << what << "\n";
 		return what;
 	}
 	//return what;
 }
 
-string twsal::do_operator(string src1, string src2, string no_val, string oper)
+string twsal::do_operator(string src1, string src2, string no_val, string oper, twsal_memory * mem)
 {
 	if (oper == ".")
 	{
-		return src1+value(src2);
+		return src1+value(src2, mem);
 	}else
 	if (oper == "+")
 	{
-		return inttostr(strtoint(src1)+strtoint(value(src2)));
+		return inttostr(strtoint(src1)+strtoint(value(src2, mem)));
 	}else
 	if (oper == "-")
 	{
-		return inttostr(strtoint(src1)-strtoint(value(src2)));
+		return inttostr(strtoint(src1)-strtoint(value(src2, mem)));
 	}else		     
 	if (oper == "*")
 	{
-		return inttostr(strtoint(src1)*strtoint(value(src2)));
+		return inttostr(strtoint(src1)*strtoint(value(src2, mem)));
 	}else
 	if (oper == "^")
 	{
-		return inttostr(strtoint(src1)^strtoint(value(src2)));
+		return inttostr(strtoint(src1)^strtoint(value(src2, mem)));
 	}else		     
 	if (oper == "++")
 	{
@@ -128,12 +130,12 @@ string twsal::do_operator(string src1, string src2, string no_val, string oper)
 	}else
 	if (oper == "=")
 	{
-		set_var(no_val, value(src2));
+		set_var(no_val, value(src2, mem), mem);
 		return "";
 	}else	     
 	if (oper == "==")
 	{
-		if (src1 == value(src2))
+		if (src1 == value(src2, mem))
 		{
 			return "1"; 
 	}else
@@ -143,7 +145,7 @@ string twsal::do_operator(string src1, string src2, string no_val, string oper)
 	}else
 	if (oper == "!=")
 	{
-		if (src1 != value(src2))
+		if (src1 != value(src2, mem))
 		{
 			return "1"; 
 		}else
@@ -153,7 +155,7 @@ string twsal::do_operator(string src1, string src2, string no_val, string oper)
 	}else	
 	if (oper == ">")
 	{
-		if (strtoint(src1) > strtoint(value(src2)))
+		if (strtoint(src1) > strtoint(value(src2, mem)))
 		{
 			return "1";
 		}else
@@ -161,18 +163,18 @@ string twsal::do_operator(string src1, string src2, string no_val, string oper)
 	}else
 	if (oper == "<")
 	{
-		if (strtoint(src1) < strtoint(value(src2)))
+		if (strtoint(src1) < strtoint(value(src2, mem)))
 		{
 			return "1";
 		}else
 			return "";
 	}else
 	{
-		cout << curr_line << ":Error, unknown operator " << oper << ".";
+		cout << mem->curr_line << ":Error, unknown operator " << oper << ".";
 	}    
 }
 
-string twsal::parse_line(string src, bool * terminate)
+string twsal::parse_line(string src, twsal_memory * mem, bool * terminate)
 {
 	src = trim(src);
 	int i;
@@ -224,13 +226,13 @@ string twsal::parse_line(string src, bool * terminate)
 			{
 				if (last_operator != "")
 				{ 
-					last = do_operator(last, current, last_no_value, last_operator);
-					//actual = current;
+					last = do_operator(last, current, last_no_value, last_operator, mem);
+					//mem->actual = current;
 					current = "";
 				}else
 				{
 				last_no_value = current;
-				last = value(current, terminate);
+				last = value(current, mem, terminate);
 				current = "";
 				}	
 				last_operator = current_operator;
@@ -244,23 +246,23 @@ string twsal::parse_line(string src, bool * terminate)
 	}
 	if (last_operator != "")
 	{
-		last = do_operator(last, current, last_no_value, last_operator);
+		last = do_operator(last, current, last_no_value, last_operator, mem);
 	}	  
 	if (current_operator != "")
 	{
 		// last = do_operator(last, "", last_no_value, current_operator);
-		last = do_operator(value(current, terminate), "", last_no_value, current_operator);
+		last = do_operator(value(current, mem, terminate), "", last_no_value, current_operator, mem);
 	}
 	if ((last == "") && (current_operator == "") && (last_operator == ""))
 	{
-		last = value(current, terminate);
+		last = value(current, mem, terminate);
 		current = "";
 	}    
 	return last;  
     
 }
 
-void twsal::set_var(string name, string what)
+void twsal::set_var(string name, string what, twsal_memory * mem)
 {
 	string temp;
 	if (name[0] == '$')
@@ -273,23 +275,23 @@ void twsal::set_var(string name, string what)
 	
 	if (temp[temp.length()-1] == ']')
 	{
-		set_array(string(temp, 0, temp.find("[")), parse_line(string(temp, temp.find("[")+1, temp.length()-temp.find("[")-2 )), what);
+		set_array(string(temp, 0, temp.find("[")), parse_line(string(temp, temp.find("[")+1, temp.length()-temp.find("[")-2 ), mem), what, mem);
 		return;
 	}
 	
-	for (int i = 0; i < var_names.size(); i++)
+	for (int i = 0; i < mem->var_names.size(); i++)
 	{
-		if (temp == var_names[i])
+		if (temp == mem->var_names[i])
 		{
-			var_values[i] = what;
+			mem->var_values[i] = what;
 			return;
 		}
 	}      
-	var_names.push_back(temp);
-	var_values.push_back(what);
+	mem->var_names.push_back(temp);
+	mem->var_values.push_back(what);
 }
 
-void twsal::set_array(string name, string num, string what)
+void twsal::set_array(string name, string num, string what, twsal_memory * mem)
 {
 	string temp;
 	if (name[0] == '$')
@@ -299,44 +301,44 @@ void twsal::set_array(string name, string num, string what)
 	{
 		temp = name;
 	}
-	for (int i = 0; i < array_names.size(); i++)
+	for (int i = 0; i < mem->array_names.size(); i++)
 	{
-		if (temp == array_names[i])
+		if (temp == mem->array_names[i])
 		{
-			if (strtoint(num) >= array_values[i].size())
+			if (strtoint(num) >= mem->array_values[i].size())
 			{
 				int temp2 = (strtoint(num)-1);
-				while (array_values[i].size() <= temp2)
+				while (mem->array_values[i].size() <= temp2)
 				{
-					array_values[i].push_back("");
+					mem->array_values[i].push_back("");
 				}
-				array_values[i].push_back(what);
+				mem->array_values[i].push_back(what);
 			}else
 			{
-				array_values[i][strtoint(num)] = what;
+				mem->array_values[i][strtoint(num)] = what;
 			}
 			return;
 		}
 	}
-	array_names.push_back(temp);
-	array_values.push_back(*(new vector<string>)); 
+	mem->array_names.push_back(temp);
+	mem->array_values.push_back(*(new vector<string>)); 
 	
-	int size = array_values.size()-1;
-	if (strtoint(num) >= array_values[size].size())
+	int size = mem->array_values.size()-1;
+	if (strtoint(num) >= mem->array_values[size].size())
 	{
 		int temp2 = (strtoint(num));
-		while (array_values[size].size() < temp2)
+		while (mem->array_values[size].size() < temp2)
 		{
-			array_values[size].push_back("");
+			mem->array_values[size].push_back("");
 		}
-		array_values[size].push_back(what);
+		mem->array_values[size].push_back(what);
 	}else
 	{
-		array_values[size][strtoint(num)] = what;
+		mem->array_values[size][strtoint(num)] = what;
 	}           
 }
 
-string twsal::get_var(string name)
+string twsal::get_var(string name, twsal_memory * mem)
 {
 	string temp;
 	if (name[0] == '$')
@@ -346,23 +348,23 @@ string twsal::get_var(string name)
 	{
 		temp = name;
 	}
-	for (int i =0; i < var_names.size(); i++)
+	for (int i =0; i < mem->var_names.size(); i++)
 	{
-		if (temp == var_names[i])
+		if (temp == mem->var_names[i])
 		{
-			return var_values[i];
+			return mem->var_values[i];
 		}
 	}
 	if (root == false)
 	{
-		return parent->get_var(name);
+		return parent->get_var(name, mem);
 	}else
 	{
 		return "";
 	}
 }
 
-string twsal::get_array(string name, string num)
+string twsal::get_array(string name, string num, twsal_memory * mem)
 {
 	string temp;
 	int tmpsize = strtoint(num);
@@ -373,13 +375,13 @@ string twsal::get_array(string name, string num)
 	{
 		temp = name;
 	}
-	for (int i = 0; i < array_names.size(); i++)
+	for (int i = 0; i < mem->array_names.size(); i++)
 	{
-		if (temp == array_names[i])
+		if (temp == mem->array_names[i])
 		{	
-			if (array_values[i].size() > tmpsize)
+			if (mem->array_values[i].size() > tmpsize)
 			{
-				return array_values[i][tmpsize];
+				return mem->array_values[i][tmpsize];
 			}else
 				return "";
 		}
@@ -387,15 +389,15 @@ string twsal::get_array(string name, string num)
 	return "";
 }
 
-string twsal::parse_func(/*vector< vector<string> > *dest, */string src, bool  *terminate)
+string twsal::parse_func(/*vector< vector<string> > *dest, */string src, twsal_memory * mem, bool  *terminate)
 {
-	int owned; // która czê¶æ command jest do naszej dyspozycji
+	int owned; // która czê¶æ mem->command jest do naszej dyspozycji
 	src = trim(src);
 	bool t_string = false;
 	int t_pale = 0;
 	int t_array = 0;
-	command.push_back(*(new vector<string>));
-	owned = command.size()-1;
+	mem->command.push_back(*(new vector<string>));
+	owned = mem->command.size()-1;
 	int i;
 	string temp;
 	for (i = 0; i < src.length(); i++)
@@ -403,7 +405,7 @@ string twsal::parse_func(/*vector< vector<string> > *dest, */string src, bool  *
 		if ((src[i] != ' ') && (src[i] != '\t'))  // ignore spaces       
 		if (src[i] == '(')
 		{
-			command[owned].push_back(temp); // mamy juz nazwe funkcji
+			mem->command[owned].push_back(temp); // mamy juz nazwe funkcji
 			break;   
 		}else
 		{
@@ -435,93 +437,106 @@ string twsal::parse_func(/*vector< vector<string> > *dest, */string src, bool  *
 		}else
 		if ((src[i] == ')') && (t_pale == 0) && (t_array == 0) && (!t_string))
 		{
-			command[owned].push_back(temp);
+			mem->command[owned].push_back(temp);
 			break;
 		}
 		
 		if ((src[i] == ',') && (!t_pale) && (!t_array) && (!t_string))
 		{
 			//temp += src[i];
-			command[owned].push_back(temp);
+			mem->command[owned].push_back(temp);
 			temp = "";
 		}else         
 			temp += src[i];
 	}
 	
 	// FIXME: this is not too efficient...
-	if (command[owned].back() == "")
+	if (mem->command[owned].back() == "")
 	{
-		command[owned].pop_back();
+		mem->command[owned].pop_back();
 	}
 	
-	if (command[owned][0] == "echo")
+	if (mem->command[owned][0] == "echo")
 	{
-		cout << parse_line(command[owned][1]);
-		command[owned].pop_back();
+		cout << parse_line(mem->command[owned][1], mem);
+		mem->command[owned].pop_back();
 		return "";
 	}else
-	if (command[owned][0] == "return")
+	if (mem->command[owned][0] == "return")
 	{
 		if (terminate != NULL)
 		{
 			(*terminate) = true;
 		}
-		if (command[owned].size() >= 2)
+		if (mem->command[owned].size() >= 2)
 		{
-			return parse_line(command[owned][1]);
+			return parse_line(mem->command[owned][1], mem);
 		}else
 			return "";
 	}else
-	if (command[owned][0] == "length")
+	if (mem->command[owned][0] == "length")
 	{
-		int templen = array_names.size();
-		if (!(command[owned].size() >= 2))
+		int templen = mem->array_names.size();
+		if (!(mem->command[owned].size() >= 2))
 		{
-			cout << "\n" << curr_line << ": Error: length() - You must give a name of a table.\n";
+			cout << "\n" << mem->curr_line << ": Error: length() - You must give a name of a table.\n";
 		}
 		for (int r = 0; r < templen; r++)
 		{
-			if (array_names[r] == command[owned][1])
+			if (mem->array_names[r] == mem->command[owned][1])
 			{
-				return inttostr(array_values[r].size());
+				return inttostr(mem->array_values[r].size());
 			}
 		}
 		return "0";
 	}
-	if (command[owned][0] == "substr")
+	if (mem->command[owned][0] == "substr")
 	{
-		command[owned].pop_back(); 
-		return string(parse_line(command[owned][1]), strtoint(parse_line(command[owned][2])), strtoint(parse_line(command[owned][3])));
+		mem->command[owned].pop_back(); 
+		return string(parse_line(mem->command[owned][1], mem), strtoint(parse_line(mem->command[owned][2], mem)), strtoint(parse_line(mem->command[owned][3], mem)));
 	}
-	if (command[owned][0] == "get")
+	if (mem->command[owned][0] == "get")
 	{
 		string temp;
 		getline(cin, temp);
-		command[owned].pop_back();
+		mem->command[owned].pop_back();
 		return temp;
 	}else
 	{
+	// TODO TODO TODO TODO !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 		for (int y = 0; y < functions.size(); y++)
 		{
-			if (command[owned][0] == functions[y].name)
+			if (mem->command[owned][0] == functions[y].name)
 			{
-				for (int q = 1; q < command[owned].size(); q++)
+				
+				//for (int q = 1; q < mem->command[owned].size(); q++)
+				//{
+				//	if (q-1 < functions[y].mem->var_names.size())
+				//	{
+				//		functions[y].mem->var_values[q-1] = parse_line(mem->command[owned][q]);
+				//	}
+				//}
+				//for (int q = 0; q < functions[y].argnames.size(); q++)
+				//{
+				//	if ((q+1) >= mem->command[owned].size())
+				//	{
+				//		command
+				//	}
+				//}
+				int llen = mem->command[owned].size();
+				for (int g = 1; g < llen; g++)
 				{
-					if (q-1 < functions[y].var_names.size())
-					{
-						functions[y].var_values[q-1] = parse_line(command[owned][q]);
-					}
+					mem->command[owned][g] = parse_line(mem->command[owned][g], mem);
 				}
-
-				return functions[y].execute_safe();
+				return functions[y].execute(& mem->command[owned]);
 				//return functions[y].execute();
 			}
 		}
 		if (!root)	
-			return parent->parse_func(src, terminate);
+			return parent->parse_func(src, mem, terminate);
 		//}
-		cout << '\n' << curr_line << ": Unknown function " << command[owned][0] << "!!\n";
-		command[owned].pop_back();
+		cout << '\n' << mem->curr_line << ": Unknown function " << mem->command[owned][0] << "!!\n";
+		mem->command[owned].pop_back();
 		return "";
 	}
 	
@@ -588,7 +603,7 @@ void twsal::parse_for(string src, string *a1, string *a2, string *a3)
 
 
 
-steering twsal::parse_steer(const string src, string *for_exec, string *repeat_check)
+steering twsal::parse_steer(const string src, string *for_exec, string *repeat_check, twsal_memory * mem)
 {
 	string curr = "";
 	//string what = trim(trim_br(src));
@@ -602,7 +617,7 @@ steering twsal::parse_steer(const string src, string *for_exec, string *repeat_c
 		{
 			if (curr == "if")							
 			{ 									
-				if ((parse_line(string(what, i, count-i)) != "0") && (parse_line(string(what, i, count-i)) != ""))		
+				if ((parse_line(string(what, i, count-i), mem) != "0") && (parse_line(string(what, i, count-i), mem) != ""))		
 				{								
 					return EXEC;						
 				}else								
@@ -610,9 +625,9 @@ steering twsal::parse_steer(const string src, string *for_exec, string *repeat_c
 			}else									
 			if (curr == "elif")							
 			{									
-				if (last_oper == OMMIT)						
+				if (mem->last_oper == OMMIT)						
 				{								
-					if ((parse_line(string(what, i, count-i)) != "0") && (parse_line(string(what, i, count-i)) != ""))
+					if ((parse_line(string(what, i, count-i), mem) != "0") && (parse_line(string(what, i, count-i), mem) != ""))
 					{							
 						return EXEC;					
 					}else							
@@ -641,7 +656,7 @@ steering twsal::parse_steer(const string src, string *for_exec, string *repeat_c
 					string a2 = "";
 					string a3 = "";
 					parse_for(string(what, i, count-i), &a1, &a2, &a3);
-					parse_line(a1);
+					parse_line(a1, mem);
 					(*for_exec) = a3;
 					(*repeat_check) = a2;
 					return REPEAT_IF_DO;
@@ -659,16 +674,18 @@ steering twsal::parse_steer(const string src, string *for_exec, string *repeat_c
 						return OMMIT;
 					}
 				}
-				functions.push_back(*(new twsal(tmpname, trim(string(meat, pos+1, next_bracket(pos, (int*)NULL)-pos-1)), this)));
-				string arguments = string(what, i+1, count-i-3);
+				functions.push_back(*(new twsal(tmpname, trim(string(meat, mem->pos+1, next_bracket(mem->pos, (int*)NULL)-mem->pos-1)), this)));
+				string arguments = string(what, i+1, count-i-2);
 				int arglen = arguments.length();
 				string tmparg;
-				for (int q = 0; q < arglen; q++)
+				int q;
+				for (q = 0; q < arglen; q++)
 				{
 					if ((arguments[q] != ' ') && (arguments[q] != '\t'))
 					if (arguments[q] == ',')
 					{
-						functions.back().set_var(tmparg, "");
+						//functions.back().set_var(tmparg, "", mem);
+						functions.back().argnames.push_back(tmparg);
 						tmparg = "";
 					}else
 					{
@@ -676,13 +693,15 @@ steering twsal::parse_steer(const string src, string *for_exec, string *repeat_c
 					}
 				}
 				if (arglen > 0)
-					functions.back().set_var(tmparg, "");
+				{
+					functions.back().argnames.push_back(tmparg);
+				}
 				return OMMIT;
 			}
 			#define CHECKER 							\
 			if (curr == "else")							\
 			{									\
-				if (last_oper == OMMIT)						\
+				if (mem->last_oper == OMMIT)						\
 				{								\
 					return EXEC;						\
 				}else								\
@@ -691,7 +710,7 @@ steering twsal::parse_steer(const string src, string *for_exec, string *repeat_c
 				}								\
 			}else									\
 			{									\
-				cout << curr_line << ":What did you mean by " << curr << "?\n";	\
+				cout << mem->curr_line << ":What did you mean by " << curr << "?\n";	\
 			}
 			#ifdef CHECKER
 			else
@@ -706,7 +725,7 @@ steering twsal::parse_steer(const string src, string *for_exec, string *repeat_c
 
 }
 
-// Takes position of {, returns position of corresponding }.
+// Takes mem->position of {, returns mem->position of corresponding }.
 int twsal::next_bracket(int from, int * curr_line_add)
 {
 	int brackets = 1;
@@ -751,163 +770,176 @@ int twsal::next_bracket(int from, int * curr_line_add)
 }
 
 
-string twsal::execute()
+string twsal::execute(twsal_memory * _mem)
 {
-	pos = 0;  //actual position of parser
-	is_comment = false;
-	is_string = false; 
-	is_pale = 0;
-	last_oper = (steering)NULL;
-	while (pos < meat_size)
+	bool is_string = false;
+	bool is_comment = false;
+	int is_pale = 0;
+	twsal_memory * mem;
+	if (_mem == NULL)
 	{
-		if ( is_comment || is_string || is_pale || ((meat[pos] != ';') && (meat[pos] != '{') && (meat[pos] != '}')))
+		memory.push_back(*new twsal_memory());
+		mem = &memory.back();
+	}else
+	{
+		mem = _mem;
+	}
+//	mem->pos = 0;  //mem->actual mem->position of parser
+//	is_comment = false;
+//	is_string = false; 
+//	is_pale = 0;
+//	mem->last_oper = (steering)NULL;
+	while (mem->pos < meat_size)
+	{
+		if ( is_comment || is_string || is_pale || ((meat[mem->pos] != ';') && (meat[mem->pos] != '{') && (meat[mem->pos] != '}')))
 		{
-			if ((meat[pos] == '"') && (!is_comment))
+			if ((meat[mem->pos] == '"') && (!is_comment))
 			{
 				is_string = !is_string;
-				actual += meat[pos];
+				mem->actual += meat[mem->pos];
 			}else
-			if ((meat[pos] == '(') && (!is_comment) && (!is_string))
+			if ((meat[mem->pos] == '(') && (!is_comment) && (!is_string))
 			{
 				is_pale++;
-				actual += meat[pos];
+				mem->actual += meat[mem->pos];
 			}else
-			if ((meat[pos] == ')') && (!is_comment) && (!is_string))
+			if ((meat[mem->pos] == ')') && (!is_comment) && (!is_string))
 			{
 				is_pale--;
-				actual += meat[pos];
+				mem->actual += meat[mem->pos];
 			}else
-			if ((meat[pos] == '#') && (!is_string) && (! is_comment))
+			if ((meat[mem->pos] == '#') && (!is_string) && (! is_comment))
 			{ 
 				is_comment = true;                                
 			}else        
-			if ((meat[pos] == '\n') && (!is_string) && (is_comment))
+			if ((meat[mem->pos] == '\n') && (!is_string) && (is_comment))
 			{
 				is_comment = false;     
-				curr_line++;
+				mem->curr_line++;
 			}else
 			{
 				if (! is_comment)
 				{
-					actual += meat[pos];
-					if (meat[pos] == '\n')
-						curr_line++;
+					mem->actual += meat[mem->pos];
+					if (meat[mem->pos] == '\n')
+						mem->curr_line++;
 				}	
 			}
 		}else  
-		if (meat[pos] == ';')
+		if (meat[mem->pos] == ';')
 		{
 			//if (! is_pale
 			bool terminate = false;
-			string com_result = parse_line(trim_br(trim(trim_br(actual))), &terminate);
+			string com_result = parse_line(trim_br(trim(trim_br(mem->actual))), mem, &terminate);
 			if (terminate == true)
 			{
 				return com_result;
 			}
-			actual = "";
+			mem->actual = "";
 		}else
-		if (meat[pos] == '{')
+		if (meat[mem->pos] == '{')
 		{
-			stairs_if.push_back("");
-			stairs_for.push_back("");
-			last_oper = parse_steer(actual, &stairs_for[stairs_for.size()-1], &stairs_if[stairs_if.size()-1]);
-			if (last_oper == EXEC)
+			mem->stairs_if.push_back("");
+			mem->stairs_for.push_back("");
+			mem->last_oper = parse_steer(mem->actual, &mem->stairs_for[mem->stairs_for.size()-1], &mem->stairs_if[mem->stairs_if.size()-1], mem);
+			if (mem->last_oper == EXEC)
 			{	
-				actual = "";
+				mem->actual = "";
 				//continue;
-				stairs_if.pop_back();
-				stairs_for.pop_back();
+				mem->stairs_if.pop_back();
+				mem->stairs_for.pop_back();
 			}else
-			if (last_oper == OMMIT)
+			if (mem->last_oper == OMMIT)
 			{
-				pos = next_bracket(pos, &curr_line)+1;
-				actual = ""; 
-				stairs_if.pop_back();
-				stairs_for.pop_back();
+				mem->pos = next_bracket(mem->pos, &mem->curr_line)+1;
+				mem->actual = ""; 
+				mem->stairs_if.pop_back();
+				mem->stairs_for.pop_back();
 				continue;
 			}else
-			if (last_oper == REPEAT_IF)
+			if (mem->last_oper == REPEAT_IF)
 			{
-				string tmp = parse_line(stairs_if[stairs_if.size()-1]);
+				string tmp = parse_line(mem->stairs_if[mem->stairs_if.size()-1], mem);
 				if ((tmp == "0")  || (tmp == ""))
 				{
-					pos = next_bracket(pos, &curr_line)+1;
-					actual = "";
-					stairs_if.pop_back();
-					stairs_for.pop_back();
+					mem->pos = next_bracket(mem->pos, &mem->curr_line)+1;
+					mem->actual = "";
+					mem->stairs_if.pop_back();
+					mem->stairs_for.pop_back();
 					continue;
 				}
-				stairs.push_back(next_bracket(pos, NULL));
-				stairs_back.push_back(pos);
-				actual = "";
-				stairs_for.pop_back();
-				stairs_types.push_back(WHILE);
+				mem->stairs.push_back(next_bracket(mem->pos, NULL));
+				mem->stairs_back.push_back(mem->pos);
+				mem->actual = "";
+				mem->stairs_for.pop_back();
+				mem->stairs_types.push_back(WHILE);
 			}else
-			if (last_oper == REPEAT_IF_DO)
+			if (mem->last_oper == REPEAT_IF_DO)
 			{
-				string tmp = parse_line(stairs_if[stairs_if.size()-1]);
+				string tmp = parse_line(mem->stairs_if[mem->stairs_if.size()-1], mem);
 				if ((tmp == "0") || (tmp == ""))
 				{
-					pos = next_bracket(pos, &curr_line)+1;
-					actual = "";
-					stairs_if.pop_back();
-					stairs_for.pop_back();
+					mem->pos = next_bracket(mem->pos, &mem->curr_line)+1;
+					mem->actual = "";
+					mem->stairs_if.pop_back();
+					mem->stairs_for.pop_back();
 					continue;
 				}
-				stairs.push_back(next_bracket(pos, NULL));
-				stairs_back.push_back(pos);
-				actual = "";
-				stairs_types.push_back(FOR);
+				mem->stairs.push_back(next_bracket(mem->pos, NULL));
+				mem->stairs_back.push_back(mem->pos);
+				mem->actual = "";
+				mem->stairs_types.push_back(FOR);
 			}
 		}else
-		if (meat[pos] == '}')
+		if (meat[mem->pos] == '}')
 		{
-			if (stairs.size() > 0)
-			if (pos == stairs[stairs.size()-1])
+			if (mem->stairs.size() > 0)
+			if (mem->pos == mem->stairs[mem->stairs.size()-1])
 			{
-				if (stairs_types[stairs_types.size()-1] == WHILE)
+				if (mem->stairs_types[mem->stairs_types.size()-1] == WHILE)
 				{
-					string tmp = parse_line(stairs_if[stairs_if.size()-1]);
+					string tmp = parse_line(mem->stairs_if[mem->stairs_if.size()-1], mem);
 					if ((tmp != "0") && (tmp != ""))
 					{
-						pos = stairs_back[stairs_back.size()-1]+1;
+						mem->pos = mem->stairs_back[mem->stairs_back.size()-1]+1;
 						continue;
 					}else
 					{
-						stairs.pop_back();
-						stairs_if.pop_back();
-						stairs_back.pop_back();
-						stairs_types.pop_back();
-						actual = "";
+						mem->stairs.pop_back();
+						mem->stairs_if.pop_back();
+						mem->stairs_back.pop_back();
+						mem->stairs_types.pop_back();
+						mem->actual = "";
 						continue;
 					}
 				}else
-				if (stairs_types[stairs_types.size()-1] == FOR)
+				if (mem->stairs_types[mem->stairs_types.size()-1] == FOR)
 				{
-					parse_line(stairs_for[stairs_for.size()-1]);
-					string tmp = parse_line(stairs_if[stairs_if.size()-1]);
+					parse_line(mem->stairs_for[mem->stairs_for.size()-1], mem);
+					string tmp = parse_line(mem->stairs_if[mem->stairs_if.size()-1], mem);
 					if ((tmp != "0") && (tmp != ""))
 					{
-						pos = stairs_back[stairs_back.size()-1]+1;
+						mem->pos = mem->stairs_back[mem->stairs_back.size()-1]+1;
 						continue;
 					}else
 					{
-						stairs.pop_back();
-						stairs_if.pop_back();
-						stairs_back.pop_back();
-						stairs_types.pop_back();
-						stairs_for.pop_back();
-						actual = "";
+						mem->stairs.pop_back();
+						mem->stairs_if.pop_back();
+						mem->stairs_back.pop_back();
+						mem->stairs_types.pop_back();
+						mem->stairs_for.pop_back();
+						mem->actual = "";
 						continue;
 					}
 				}
 			}
-			actual = "";
+			mem->actual = "";
 		}
 		
-		pos++;
+		mem->pos++;
 	}
-	pos = 0;
+	//mem->pos = 0;
+	memory.pop_back();
 	return "";
 }
 

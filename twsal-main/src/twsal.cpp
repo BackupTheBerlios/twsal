@@ -8,6 +8,7 @@
 using namespace std;
 
 #include "twsal.h"
+#include "encode_string.cpp"
 
 twsal::twsal()
 {
@@ -79,7 +80,7 @@ string twsal::value(string what, twsal_memory * mem, bool * terminate/* = NULL*/
 	if ((what[0] == '"') && (what[what.length()-1] == '"'))
 	{
 	// cout << "NAH! " << what;
-		return string(what, 1, what.length()-2);
+		return encode_string(string(what, 1, what.length()-2), mem->var_names, mem->var_values);
 	}else
 	if (what[0] == '(')
 	{

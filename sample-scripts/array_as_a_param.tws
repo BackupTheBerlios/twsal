@@ -1,0 +1,24 @@
+#!/usr/bin/twsal
+# Well, array can be a parameter in function, too, and this is an example of it.
+# Reads words from stdin until "", then it prints what it read before. Simple.
+
+_print($e)
+{	
+	$s = length($e);
+	for ($i = 0; $i < $s; $i++)
+	{
+		echo($e[$i]."\n");
+	}
+}
+
+$get = get();
+$zizi[0] = $get;
+
+while ($get != "")
+{
+	$get = get();
+	$zizi[length($zizi)] = $get;
+}
+
+print($zizi);
+

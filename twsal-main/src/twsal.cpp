@@ -14,7 +14,7 @@ twsal::twsal()
 {
 	memory.push_back(* new twsal_memory());
 	twsal_memory * mem = & memory.back();
-	mem->pos = 0;  //mem->actual mem->position of parser
+	mem->pos = 0;  //actual position of parser
 	//is_comment = false;
 	//is_string = false; 
 	//is_pale = 0;
@@ -79,7 +79,6 @@ string twsal::value(string what, twsal_memory * mem, bool * terminate/* = NULL*/
 	}else
 	if ((what[0] == '"') && (what[what.length()-1] == '"'))
 	{
-	// cout << "NAH! " << what;
 		return encode_string(string(what, 1, what.length()-2), mem->var_names, mem->var_values);
 	}else
 	if (what[0] == '(')
@@ -312,36 +311,36 @@ void twsal::set_array(string name, string num, string what, twsal_memory * mem)
 	{
 		if (temp == mem->array_names[i])
 		{
-			if (strtoint(num) >= mem->array_values[i].size())
+			if (strtoint(num) >= mem->array_values[i]->size())
 			{
 				int temp2 = (strtoint(num)-1);
-				while (mem->array_values[i].size() <= temp2)
+				while (mem->array_values[i]->size() <= temp2)
 				{
-					mem->array_values[i].push_back("");
+					mem->array_values[i]->push_back("");
 				}
-				mem->array_values[i].push_back(what);
+				mem->array_values[i]->push_back(what);
 			}else
 			{
-				mem->array_values[i][strtoint(num)] = what;
+				(*mem->array_values[i])[strtoint(num)] = what;
 			}
 			return;
 		}
 	}
 	mem->array_names.push_back(temp);
-	mem->array_values.push_back(*(new vector<string>)); 
+	mem->array_values.push_back(new vector<string>); 
 	
 	int size = mem->array_values.size()-1;
-	if (strtoint(num) >= mem->array_values[size].size())
+	if (strtoint(num) >= mem->array_values[size]->size())
 	{
 		int temp2 = (strtoint(num));
-		while (mem->array_values[size].size() < temp2)
+		while (mem->array_values[size]->size() < temp2)
 		{
-			mem->array_values[size].push_back("");
+			mem->array_values[size]->push_back("");
 		}
-		mem->array_values[size].push_back(what);
+		mem->array_values[size]->push_back(what);
 	}else
 	{
-		mem->array_values[size][strtoint(num)] = what;
+		(*mem->array_values[size])[strtoint(num)] = what;
 	}           
 }
 
@@ -386,9 +385,9 @@ string twsal::get_array(string name, string num, twsal_memory * mem)
 	{
 		if (temp == mem->array_names[i])
 		{	
-			if (mem->array_values[i].size() > tmpsize)
+			if (mem->array_values[i]->size() > tmpsize)
 			{
-				return mem->array_values[i][tmpsize];
+				return (*mem->array_values[i])[tmpsize];
 			}else
 				return "";
 		}
@@ -488,11 +487,12 @@ string twsal::parse_func(/*vector< vector<string> > *dest, */string src, twsal_m
 		{
 			cout << "\n" << mem->curr_line << ": Error: length() - You must give a name of a table.\n";
 		}
+		string nm = cutdollar(mem->command[owned][1]);
 		for (int r = 0; r < templen; r++)
 		{
-			if (mem->array_names[r] == mem->command[owned][1])
+			if (mem->array_names[r] == nm)
 			{
-				return inttostr(mem->array_values[r].size());
+				return inttostr(mem->array_values[r]->size());
 			}
 		}
 		return "0";
@@ -510,7 +510,6 @@ string twsal::parse_func(/*vector< vector<string> > *dest, */string src, twsal_m
 		return temp;
 	}else
 	{
-	// TODO TODO TODO TODO !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 		for (int y = 0; y < functions.size(); y++)
 		{
 			if (mem->command[owned][0] == functions[y].name)
@@ -531,11 +530,19 @@ string twsal::parse_func(/*vector< vector<string> > *dest, */string src, twsal_m
 				//	}
 				//}
 				int llen = mem->command[owned].size();
+				vector<param_type> types;
 				for (int g = 1; g < llen; g++)
 				{
-					mem->command[owned][g] = parse_line(mem->command[owned][g], mem);
+					if (exists((*mem), ARRAY, & mem->command[owned][g]))
+					{
+						types.push_back(ARRAY);
+					}else
+					{
+						types.push_back(VARIABLE);
+						mem->command[owned][g] = parse_line(mem->command[owned][g], mem);
+					}
 				}
-				return functions[y].execute(& mem->command[owned]);
+				return functions[y].execute(& mem->command[owned], types, mem);
 				//return functions[y].execute();
 			}
 		}
@@ -656,7 +663,6 @@ steering twsal::parse_steer(const string src, string *for_exec, string *repeat_c
 			}else
 			if (curr == "for")
 			{
-				// TODO !!!
 				if ((repeat_check != NULL) && (for_exec != NULL))
 				{
 					string a1 = "";
@@ -671,7 +677,6 @@ steering twsal::parse_steer(const string src, string *for_exec, string *repeat_c
 			}else
 			if (curr[0] == '_')
 			{
-				//cout << "bum!";
 				string tmpname = trim(string(curr, 1, curr.length()));
 				int fcount = functions.size();
 				for (int r = 0; r < fcount; r++)
@@ -692,7 +697,7 @@ steering twsal::parse_steer(const string src, string *for_exec, string *repeat_c
 					if (arguments[q] == ',')
 					{
 						//functions.back().set_var(tmparg, "", mem);
-						functions.back().argnames.push_back(tmparg);
+						functions.back().argnames.push_back(cutdollar(tmparg));
 						tmparg = "";
 					}else
 					{
@@ -701,7 +706,7 @@ steering twsal::parse_steer(const string src, string *for_exec, string *repeat_c
 				}
 				if (arglen > 0)
 				{
-					functions.back().argnames.push_back(tmparg);
+					functions.back().argnames.push_back(cutdollar(tmparg));
 				}
 				return OMMIT;
 			}
@@ -1000,6 +1005,41 @@ string twsal::inttostr(int what)
 	convertor << what;
 	convertor >> thing;
 	return thing;
+}
+
+bool twsal::exists(twsal_memory & mem, param_type type, string * name)
+{
+	string * lname;
+	if ((*name)[0] == '$')
+	{
+		(*lname) = string((*name), 1, name->length()-1);
+	}else
+		lname = name;
+
+	if (type == VARIABLE)
+	{
+		int s = mem.var_names.size();
+		for (int i = 0; i < s; i++)
+		{
+			if (mem.var_names[i] == (*lname))
+			{
+				return true;
+			}
+		}
+		return false;
+	}else
+	if (type == ARRAY)
+	{
+		int s = mem.array_names.size();
+		for (int i = 0; i < s; i++)
+		{
+			if (mem.array_names[i] == (*lname))
+			{
+				return true;
+			}
+		}
+		return false;
+	}
 }
 
 // vim: ts=5

@@ -8,7 +8,7 @@
 using namespace std;
 
 #include "twsal.h"
-#include "encode_string.cpp"
+#include "encode_string.h"
 
 twsal::twsal()
 {

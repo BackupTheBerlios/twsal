@@ -1,5 +1,11 @@
 
+#include <iostream>
+#include <string>
+#include <vector>
 
+using namespace std;
+
+#include "encode_string.h"
 
 bool check_char(char ch)
 {

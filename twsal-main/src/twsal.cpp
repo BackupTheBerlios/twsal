@@ -593,24 +593,12 @@ void twsal::parse_for(string src, string *a1, string *a2, string *a3)
 			{
 				is_string = !is_string;
 			}
-			if (level == 0)
+			switch (level)
 			{
-				(*a1) += src[i];
-			}else
-			if (level == 1)
-			{
-				(*a2) += src[i];
-			}else
-			if (level == 2)
-			{
-				(*a3) += src[i];
-			}
-			/*switch (level)
-			{
-				case 0 : (*a1) += src[i];
-				case 1 : (*a2) += src[i];
+				case 0 : (*a1) += src[i]; break;
+				case 1 : (*a2) += src[i]; break;
 				case 2 : (*a3) += src[i];
-			}*/
+			}
 		}
 	}
 }

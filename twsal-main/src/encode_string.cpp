@@ -55,19 +55,13 @@ string encode_string(string in, vector<string> &names, vector<string> &values)
 		{
 			if (last)
 			{
-				if (in[i] ==  'n')
+				switch (in[i])
 				{
-					out += '\n';
-				}else
-				if (in[i] == '\\')
-				{
-					out += '\\';
-				}else
-				if (in[i] == 't')
-				{
-					out += '\t';
-				}else
-					out += in[i];
+					case 'n'	: out += '\n'; break;
+					case '\\'	: out += '\\'; break;
+					case 't'	: out += '\t'; break;
+					default 	: out += in[i];		  
+				}
 				last = false;
 			}else
 			{

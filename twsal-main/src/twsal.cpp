@@ -710,19 +710,19 @@ steering twsal::parse_steer(const string src, string *for_exec, string *repeat_c
 				}
 				return OMMIT;
 			}
-			#define CHECKER 							\
-			if (curr == "else")							\
-			{									\
-				if (mem->last_oper == OMMIT)						\
-				{								\
-					return EXEC;						\
-				}else								\
-				{								\
-					return OMMIT;						\
-				}								\
-			}else									\
-			{									\
-				cout << mem->curr_line << ":What did you mean by " << curr << "?\n";	\
+			#define CHECKER\
+			if (curr == "else")\
+			{\
+				if (mem->last_oper == OMMIT)\
+				{\
+					return EXEC;\
+				}else\
+				{\
+					return OMMIT;\
+				}\
+			}else\
+			{\
+				cout << mem->curr_line << ":What did you mean by " << curr << "?\n";\
 			}
 			#ifdef CHECKER
 			else
@@ -1033,4 +1033,4 @@ bool twsal::exists(twsal_memory & mem, param_type type, string * name)
 	}
 }
 
-// vim: ts=5
+// vim: ts=3
